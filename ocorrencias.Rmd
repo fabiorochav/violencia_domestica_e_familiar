@@ -1,0 +1,197 @@
+---
+title: "Ocorrências de crimes de violência doméstica e familiar"
+subtitle: "**Ouro Preto (MG), Mariana (MG) e Itabirito (MG)**"
+author: "Fábio Rocha | rochaviannafj@gmail.com ^[Economista (UFOP)]"
+output: pdf_document
+date: "`r format(Sys.time(), '%d de %B, %Y')`"
+---
+
+```{r, echo=F, eval=T, results='asis', fig.width=8, fig.height=6, fig.align='center', out.width=".9\\linewidth", warning=FALSE, message=FALSE, size='small'}
+
+library(lubridate)
+library(readxl)
+library(dplyr)
+library(tidyverse)
+library(stargazer)
+library(gridExtra)
+
+```
+
+```{r, echo=F, eval=T, results='asis', fig.width=8, fig.height=6, fig.align='center', out.width=".9\\linewidth", warning=FALSE, message=FALSE, size='small'}
+
+dados_bruto <- read_excel("C:/Users/13665625777/Downloads/Modelo_Sesp_Violencia Domestica e Familiar contra a Mulher.Jan21_Jul23.xlsx", sheet = "Dados")
+
+```
+
+```{r, echo=F, eval=T, results='asis', fig.width=8, fig.height=6, fig.align='center', out.width=".9\\linewidth", warning=FALSE, message=FALSE, size='small'}
+
+dados_inconfidentes = dados_bruto %>%
+  mutate(dia_semana = weekdays(`DATA FATO`)) %>% 
+  mutate(dia_mes = day(`DATA FATO`)) %>%
+  mutate(ano = year(`DATA FATO`)) %>%
+  filter(MUNICÍPIO %in% c("OURO PRETO", "MARIANA", "ITABIRITO")) %>%
+  select("municipio" = MUNICÍPIO,
+         "data" = `DATA FATO`,
+         "registro" = `QUANT. VÍTIMAS VIOL.DOMÉSTICA`,
+         dia_semana,
+         dia_mes, ano)
+
+```
+
+## Motivação
+
+Nos dias 21 e 28 de agosto de 2023 ocorreram dois crimes de feminicidio no município de Ouro Preto (talvez por razões puramente aleatórias), na segunda-feira. Inquietante provocação me fez verificar alguns dados disponibilizados publicamente pela Secretaria de Justiça e Segurança Pública do Estado de Minas Gerais afim de tentar responder algumas questões.
+
+## Questões:
+
+- Existe um padrão de ocorrências desse tipo de crime ao longo da semana? Esse padrão, se existe, é verificado nas demais cidades?
+- Existe um padrão de ocorrências desse tipo de crime ao longo do mês? Esse padrão, se existe, é verificado nas demais cidades?
+
+Embora os crimes de feminicidio e violencia doméstica sejam tipificados, e portanto, registrados de forma diferente, os dados utilizados abaixo visam dar um norte desse tipo de padrão comportamental.
+
+Olhemos, primeiramente, os dados agrupados. Isto é, o somatório de crimes das três cidades por dia da semana ao longo de janeiro de 2021 a julho de 2023.
+
+```{r, echo=F, eval=T, results='asis', fig.width=8, fig.height=6, fig.align='center', out.width=".9\\linewidth", warning=FALSE, message=FALSE, size='small'}
+
+dados_agrupados_inconfidentes = dados_inconfidentes %>%
+  group_by(municipio, dia_semana, ano) %>%
+  summarise(total = sum(registro))
+
+```
+
+```{r, echo=F, eval=T, results='asis', fig.width=6, fig.height=3, fig.align='center', out.width=".9\\linewidth", warning=FALSE, message=FALSE, size='small'}
+
+dados_agrupados_inconfidentes$dia_semana <- reorder(dados_agrupados_inconfidentes$dia_semana, -dados_agrupados_inconfidentes$total)
+
+ggplot(dados_agrupados_inconfidentes, aes(x = dia_semana, y = total)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  #geom_label(aes(label = total)) +
+  labs(title = "Violência Familiar e Doméstica Contra Mulher",
+       subtitle = "janeiro 2021 - julho 2023",
+       caption = "Dados: SEJUSP",
+       y = "",
+       x = "") +
+  theme(legend.position = "top",
+        legend.key.size = unit(0.4, "cm"),
+        legend.key = element_blank(),
+        legend.title = element_blank())
+
+```
+
+É fácil constatar uma predominância de ocorrência desses crimes aos domingos, seguido de sábado, e segunda-feira. Ao que tudo indica, duas hipótes explicativas parecem razoáveis para esse tipo de ocorrência: (a) aos finais de semanas ocorre maior consumo de bebidas alcoólicas e as pessoas que estão como parceiros ou conjuges das mulhres tendem a praticar esses tipo de crime sob o efeito de tais bebidas, ou mesmo algum outro tipo de droga ilicita. (b) Pode estar relacionado com o maior tempo que o casal passa junto. 
+
+Dados e pesquisas sobre essas mesmas ocorrências foram reportadas durante o período de quarentena na pandemia.
+
+## Existe um padrão, entre as cidades, no tempo?
+
+Quanto a resposta da segunda questão da primeira pergurnta, parece que temos boas razões para acreditar que esse padrão se reproduz nas demais cidades. E o mesmo ocorre ao longo dos anos^[Me limitei a reportar essa curta série dado a disponibilidade de dados. Ao que tudo incida a SEJUSP começou fornecer esses dados recentemente.]. O próximo gráfico parece contribuir com essa constatação.
+
+É importante aqui notar que esses são registros nominais de ocorrências desses tipos de crime. Então é facil perceber que Ouro Preto registra muito mais ocorrências desse tipo de crime do que os demais municípios. Isso se deve, em parte, por causa do tamanho da sua população. 
+
+```{r, echo=F, eval=T, results='asis', fig.width=9, fig.height=6, fig.align='center', out.width=".9\\linewidth", warning=FALSE, message=FALSE, size='small'}
+
+dados_agrupados_inconfidentes$dia_semana <- reorder(dados_agrupados_inconfidentes$dia_semana, -dados_agrupados_inconfidentes$total)
+
+ggplot(dados_agrupados_inconfidentes, aes(x = dia_semana, y = total, fill=municipio)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_minimal() +
+  facet_wrap(~ ano, scales = "free") + 
+  labs(title = "Violência Familiar e Doméstica Contra Mulher",
+       subtitle = "janeiro 2021 - julho 2023",
+       caption = "Dados: SEJUSP",
+       y = "",
+       x = "") +
+  theme(legend.position = "top",
+        legend.key.size = unit(0.4, "cm"),
+        legend.key = element_blank(),
+        legend.title = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+```{r, echo=F, eval=T, results='asis', fig.width=9, fig.height=6, fig.align='center', out.width=".9\\linewidth", warning=FALSE, message=FALSE, size='small'}
+
+dados_agrupados_inconfidentes_mes = dados_inconfidentes %>%
+  group_by(municipio, dia_mes, ano) %>%
+  summarise(total = sum(registro))
+
+```
+
+## Existe um padrão, entre as cidades, ao longo dos dias dos meses?
+
+Como foi possível observar um padrão de ocorrência ao longo do mês também quis investigar se existe uma relação com o dia do mês. Para essa questão, parece que podemos contar com um categórico não!
+
+```{r, echo=F, eval=T, results='asis', fig.width=9, fig.height=6, fig.align='center', out.width=".9\\linewidth", warning=FALSE, message=FALSE, size='small'}
+
+ggplot(dados_agrupados_inconfidentes_mes, aes(x = dia_mes, y = total, color = municipio, size=total)) +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Violência Familiar e Doméstica Contra Mulher",
+       subtitle = "janeiro 2021 - julho 2023",
+       caption = "Dados: SEJUSP",
+       y = "Quantidade de registros",
+       x = "Dia do mês") +
+  theme(legend.position = "top",
+        legend.key.size = unit(0.4, "cm"),
+        legend.title = element_blank())
+
+```
+
+```{r, echo=F, eval=T, results='asis', fig.width=8, fig.height=6, fig.align='center', out.width=".9\\linewidth", warning=FALSE, message=FALSE, size='small'}
+
+dados_inconfidentes = dados_inconfidentes %>%
+  mutate(domingo = ifelse(dia_semana == "domingo", 1, 0)) %>%
+  mutate(fds = ifelse(dia_semana %in% c("domingo", "sábado", "sexta-feira"), 1, 0)) %>%
+  mutate(sabado_seg = ifelse(dia_semana %in% c("sábado", "domingo", "segunda"), 1, 0)) %>%
+  mutate(mariana = ifelse(municipio == "MARIANA", 1, 0)) %>%
+  mutate(op = ifelse(municipio == "OP", 1, 0)) %>%
+  mutate(itabirito = ifelse(municipio == "ITABIRITO", 1, 0))
+
+```
+
+## Teste estatístico
+
+Basicamente busca-se verificar se existe diferenças médias estatisticamente significativas entre o numero de crimes que ocorrrem:
+
+- Domingo em relação aos demais dias da semana (domingo)
+- Sábado a segunda em relação aos demais dias da semana (sabado_seg).
+- Sexta a domingo em relação aos demais dias da semana (fds).
+
+
+O teste consiste em verificar se existe diferença de médias de ocorrências dos crimes estatisticamente significativas. No teste 1, a varíável domingo recebe 1 se o crime tiver ocorrido nesse dia e 0 nos demais. No teste 2, a variavel sabado_seg recebe 1 se o crime tiver ocorrido nesse intervalo de tempo e 0 nos demais. E no teste 3, a variável fds (final de semana), recebe 1 se o crime tiver ocorrido na sexta, sábado ou domingo, e 0 nos demais dias. 
+
+## Resultados:
+
+- Em relaçao ao teste 1, como o teste foi feito para Y na forma log, tem-se que a diferença média de crimes ocorridos no domingo é 6,4% maior nesse dia em relação aos demais.
+
+- No teste 2, também em log, tem-se que a ocorrência de crimes nesse intervalo de tempo é 5,5% maior em relação aos demais dias.
+
+- E no ultimo dia, sexta a domingo, tem-se que a diferença média de crimes nesses dias é de 4% maior em relação aos demais.
+
+
+## Importante
+
+É importante considerar casos de subnotificação, isto é, pode ocorrer de a vítima não denunciar e os dados aqui reportados não representar adequadamente a realidade.
+
+```{r, echo=FALSE, eval=TRUE, results='asis', warning=FALSE, message=FALSE}
+
+teste_domingo = lm(log(registro) ~ domingo, dados_inconfidentes)
+teste_sab_seg = lm(log(registro) ~ sabado_seg, dados_inconfidentes)
+teste_fds = lm(log(registro) ~ fds, dados_inconfidentes)
+
+#teste_domingo_inter_op = lm(log(registro) ~ domingo + I(domingo*op), dados_inconfidentes)
+#teste_domingo_inter_mar = lm(log(registro) ~ domingo + I(domingo*mariana), dados_inconfidentes)
+#teste_domingo_inter_ita = lm(log(registro) ~ domingo + I(domingo*itabirito), dados_inconfidentes)
+
+
+#teste_sab_seg_inter = lm(registro ~ sabado_seg, dados_inconfidentes)
+#teste_fds_inter = lm(registro ~ fds, dados_inconfidentes)
+
+stargazer(teste_domingo,
+          teste_sab_seg,
+          teste_fds, header = FALSE)
+
+```
+
+
